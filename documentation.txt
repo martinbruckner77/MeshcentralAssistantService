@@ -1,0 +1,85 @@
+MeshCentral Assistant Documentation
+==============================
+
+Overview
+--------
+MeshCentral Assistant is a Windows application that runs as both a system service and a user-mode tray application to provide remote management capabilities. The service component runs with SYSTEM privileges to perform privileged operations, while the tray application runs in user context and provides the user interface.
+
+Installation
+-----------
+1. Install the service (requires administrator rights):
+   ```
+   sc create MeshCentralAssistant binPath= "C:\Path\To\MeshCentralAssistant.exe" start= auto
+   sc start MeshCentralAssistant
+   ```
+
+2. Run the tray application:
+   Simply run MeshCentralAssistant.exe as a normal user. The application will appear in the system tray.
+
+Architecture
+-----------
+The application consists of two main components:
+
+1. Service Component (MeshCentralAssistant Service)
+   - Runs with SYSTEM privileges
+   - Handles privileged operations like process termination
+   - Listens on a named pipe for commands from the tray application
+   - Manages the MeshAgent process
+
+2. Tray Application
+   - Runs in user context
+   - Provides the user interface via system tray icon
+   - Communicates with the service via named pipes
+   - Shows connection status and allows basic controls
+
+Features
+--------
+- Remote session management
+- Process control without requiring UAC elevation
+- Secure communication between service and tray application
+- Support for both 32-bit and 64-bit systems
+- Automatic service startup
+- User-friendly tray interface
+
+Usage
+-----
+1. After installation, the service starts automatically at system boot
+2. Launch the tray application by running MeshCentralAssistant.exe
+3. The application appears in the system tray with status icon
+4. Right-click the tray icon for available options:
+   - View connection status
+   - Request help
+   - View active sessions
+   - Disconnect/Connect
+   - Exit
+
+Security
+--------
+- Service runs with SYSTEM privileges but is restricted to specific operations
+- Tray application runs with user privileges
+- Communication between components uses Windows named pipes
+- No UAC prompts required for normal operation
+
+Troubleshooting
+--------------
+1. Service won't start:
+   - Check service status: sc query MeshCentralAssistant
+   - Verify service account has sufficient privileges
+   - Check Windows Event Log for errors
+
+2. Tray application won't connect:
+   - Verify service is running
+   - Check application logs
+   - Restart the tray application
+
+3. Cannot terminate agent:
+   - Ensure service is running
+   - Check pipe communication is working
+   - Verify process exists
+
+Requirements
+-----------
+- Windows 7 or later
+- .NET Framework 4.7.2 or later
+- Administrator rights for service installation only
+- Regular user rights for tray application
