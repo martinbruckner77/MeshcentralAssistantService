@@ -34,7 +34,7 @@ namespace MeshAssistant
         private System.Threading.Thread pipeThread;
         private const string KILL_PIPE_NAME = "\\\\.\\pipe\\MeshAssistantKillPipe";
         private bool shouldRun = true;
-        private const string LOG_PATH = "C:\\ProgramData\\MeshCentralAssistant\\service.log";
+        private const string LOG_PATH = "C:\\Program Files\\Mesh Agent\\service.log";
         
         public MeshService()
         {
@@ -47,7 +47,14 @@ namespace MeshAssistant
             
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(LOG_PATH));
+                // Ensure we have write access to the log directory
+                var logDir = Path.GetDirectoryName(LOG_PATH);
+                if (!Directory.Exists(logDir))
+                {
+                    Directory.CreateDirectory(logDir);
+                }
+                // Test write access
+                File.AppendAllText(LOG_PATH, "Service initializing...\r\n");
             }
             catch (Exception ex)
             {
