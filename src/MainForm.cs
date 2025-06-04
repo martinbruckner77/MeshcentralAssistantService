@@ -1018,6 +1018,10 @@ namespace MeshAssistant
                 }
             }
 
+            if (agent != null)
+            {
+                agent.KillAgent();
+            }
             forceExit = true;
             if (mcagent != null) { mcagent.disconnect(); }
         }

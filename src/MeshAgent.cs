@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright 2009-2022 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,6 +42,7 @@ namespace MeshAssistant
         public Uri ServerUri = null;
         public bool ServiceAgent = true;
         public bool IntelAmtSupport = false;
+        private const string AGENT_PROCESS_NAME = "MeshAgent";
         private string selfExecutableHashHex = null;
         private string softwareName = null;
         private string serviceName = null;
@@ -86,6 +87,22 @@ namespace MeshAssistant
         public static void StartService() { try { agentService.Start(); } catch (Exception) { } }
         public static void StopService() { try { agentService.Stop(); } catch (Exception) { } }
 
+        public void KillAgent()
+        {
+            try 
+            {
+                System.Diagnostics.Process[] processes = System.Diagnostics.Process.GetProcessesByName(AGENT_PROCESS_NAME);
+                foreach (System.Diagnostics.Process proc in processes)
+                {
+                    proc.Kill();
+                }
+                Log("MeshAgent processes terminated");
+            }
+            catch (Exception ex) 
+            { 
+                Log("Failed to terminate MeshAgent: " + ex.Message);
+            }
+        }
         public void Log(string msg)
         {
             if (debug) { try { File.AppendAllText("debug.log", DateTime.Now.ToString("HH:mm:tt.ffff") + ": Agent: " + msg + "\r\n"); } catch (Exception) { } }
