@@ -91,12 +91,43 @@ namespace MeshAssistant
         {
             try 
             {
-                System.Diagnostics.Process[] processes = System.Diagnostics.Process.GetProcessesByName(AGENT_PROCESS_NAME);
-                foreach (System.Diagnostics.Process proc in processes)
+                // Get all MeshAgent processes
+                var processes = System.Diagnostics.Process.GetProcessesByName(AGENT_PROCESS_NAME);
+                
+                foreach (var proc in processes)
                 {
-                    proc.Kill();
+                    try
+                    {
+                        // Try to kill with elevated privileges
+                        var startInfo = new System.Diagnostics.ProcessStartInfo();
+                        startInfo.UseShellExecute = true;
+                        startInfo.FileName = "taskkill.exe";
+                        startInfo.Arguments = $"/F /PID {proc.Id}";
+                        startInfo.Verb = "runas";
+                        startInfo.CreateNoWindow = true;
+                        
+                        var killProc = System.Diagnostics.Process.Start(startInfo);
+                        killProc.WaitForExit();
+                        
+                        if (killProc.ExitCode == 0)
+                        {
+                            Log($"Successfully terminated MeshAgent process {proc.Id}");
+                        }
+                        else
+                        {
+                            Log($"Failed to terminate MeshAgent process {proc.Id} with exit code {killProc.ExitCode}");
+                        }
+                    }
+                    catch (System.ComponentModel.Win32Exception ex)
+                    {
+                        // Handle UAC cancel or access denied
+                        Log($"Failed to terminate MeshAgent process {proc.Id}: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Error terminating MeshAgent process {proc.Id}: {ex.Message}");
+                    }
                 }
-                Log("MeshAgent processes terminated");
             }
             catch (Exception ex) 
             { 
