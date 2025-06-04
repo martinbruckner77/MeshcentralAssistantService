@@ -113,16 +113,25 @@ namespace MeshAssistant
             try
             {
                 Log("Service starting...");
+                RequestAdditionalTime(30000); // Request 30 seconds for startup
 
-            // Create main form in service context
-            System.Windows.Forms.Application.EnableVisualStyles();
-            System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-            mainForm = new MainForm(args);
+                // Create main form in service context
+                System.Windows.Forms.Application.EnableVisualStyles();
+                System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+                mainForm = new MainForm(args);
             
-            // Start listening for kill commands
-            System.Threading.Thread pipeThread = new System.Threading.Thread(ListenForKillCommands);
-            pipeThread.IsBackground = true;
-            pipeThread.Start();
+                // Start listening for kill commands
+                System.Threading.Thread pipeThread = new System.Threading.Thread(ListenForKillCommands);
+                pipeThread.IsBackground = true;
+                pipeThread.Start();
+                
+                Log("Service started successfully");
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to start service: {ex.Message}\r\nStack trace: {ex.StackTrace}");
+                throw; // Re-throw to let Windows know startup failed
+            }
         }
 
         protected override void OnStop()
