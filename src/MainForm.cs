@@ -1642,6 +1642,31 @@ namespace MeshAssistant
                 // Handle any unexpected errors during the process search
                 MessageBox.Show($"An error occurred while trying to find or terminate MeshAgent.exe: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+    try 
+    {
+        if (agent != null && agent.ServiceAgent) 
+        {
+            MessageBox.Show("Cannot terminate the agent process as it is running under SYSTEM account. The assistant will disconnect but the agent will continue running.",
+                          "Permission Denied",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Warning);
+            if (agent != null) { agent.Dispose(); }
+            Application.Exit();
         }
+        else
+        {
+            if (agent != null) { agent.Dispose(); }
+            Application.Exit(); 
+        }
+    }
+    catch (Exception)
+    {
+        // If we can't check permissions, assume we don't have them
+        MessageBox.Show("Cannot terminate the agent process. The assistant will disconnect but the agent will continue running.",
+                      "Permission Denied", 
+                      MessageBoxButtons.OK,
+                      MessageBoxIcon.Warning);
+        if (agent != null) { agent.Dispose(); }
+        Application.Exit();
     }
 }
