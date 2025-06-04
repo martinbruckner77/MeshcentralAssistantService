@@ -83,3 +83,26 @@ Requirements
 - .NET Framework 4.7.2 or later
 - Administrator rights for service installation only
 - Regular user rights for tray application
+
+Deinstallation
+-------------
+1. Stop and remove the service (requires administrator rights):
+   ```
+   sc stop MeshCentralAssistant
+   sc delete MeshCentralAssistant
+   ```
+
+2. Clean up registry entries:
+   - Remove HKLM\SOFTWARE\Open Source\MeshCentralAssistant
+   - Remove HKCU\SOFTWARE\Open Source\MeshCentralAssistant
+
+3. Remove files:
+   - Delete the MeshCentralAssistant.exe
+   - Delete the service log file at "C:\Program Files\Mesh Agent\service.log"
+   - Remove any remaining files in the installation directory
+
+4. Optional: Clean up user data
+   - Delete any remaining configuration files in user profile
+   - Remove any desktop shortcuts or start menu entries
+
+Note: It's recommended to close all running instances of the tray application before uninstalling.
