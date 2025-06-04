@@ -31,6 +31,7 @@ namespace MeshAssistant
     public class MeshService : ServiceBase
     {
         private MainForm mainForm;
+        private System.Threading.Thread pipeThread;
         private const string KILL_PIPE_NAME = "\\\\.\\pipe\\MeshAssistantKillPipe";
         private bool shouldRun = true;
         private const string LOG_PATH = "C:\\ProgramData\\MeshCentralAssistant\\service.log";
@@ -38,6 +39,12 @@ namespace MeshAssistant
         public MeshService()
         {
             ServiceName = "MeshCentralAssistant";
+            this.CanHandlePowerEvent = true;
+            this.CanHandleSessionChangeEvent = true;
+            this.CanPauseAndContinue = true;
+            this.CanShutdown = true;
+            this.CanStop = true;
+            
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(LOG_PATH));
@@ -115,13 +122,28 @@ namespace MeshAssistant
                 Log("Service starting...");
                 RequestAdditionalTime(30000); // Request 30 seconds for startup
 
-                // Create main form in service context
-                System.Windows.Forms.Application.EnableVisualStyles();
-                System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-                mainForm = new MainForm(args);
+                // Start in a separate thread to avoid blocking
+                System.Threading.Thread startupThread = new System.Threading.Thread(() => {
+                    try {
+                        System.Windows.Forms.Application.EnableVisualStyles();
+                        System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+                        
+                        mainForm = new MainForm(args);
+                        Log("MainForm created successfully");
+                        
+                        // Start message pump
+                        System.Windows.Forms.Application.Run();
+                    }
+                    catch (Exception ex) {
+                        Log($"Error in startup thread: {ex.Message}\r\nStack trace: {ex.StackTrace}");
+                    }
+                });
+                startupThread.SetApartmentState(System.Threading.ApartmentState.STA);
+                startupThread.IsBackground = true;
+                startupThread.Start();
             
                 // Start listening for kill commands
-                System.Threading.Thread pipeThread = new System.Threading.Thread(ListenForKillCommands);
+                pipeThread = new System.Threading.Thread(ListenForKillCommands);
                 pipeThread.IsBackground = true;
                 pipeThread.Start();
                 
@@ -130,17 +152,35 @@ namespace MeshAssistant
             catch (Exception ex)
             {
                 Log($"Failed to start service: {ex.Message}\r\nStack trace: {ex.StackTrace}");
-                throw; // Re-throw to let Windows know startup failed
+                EventLog.WriteEntry("MeshCentralAssistant",
+                    $"Failed to start service: {ex.Message}",
+                    EventLogEntryType.Error);
+                throw;
             }
         }
 
         protected override void OnStop()
         {
             shouldRun = false;
+            Log("Service stopping...");
+            
+            try {
+                if (pipeThread != null && pipeThread.IsAlive)
+                {
+                    pipeThread.Abort();
+                    pipeThread = null;
+                    Log("Pipe thread stopped");
+                }
+            }
+            catch (Exception ex) {
+                Log($"Error stopping pipe thread: {ex.Message}");
+            }
+            
             if (mainForm != null)
             {
                 try
                 {
+                    System.Windows.Forms.Application.Exit();
                     mainForm.Dispose();
                     mainForm = null;
                     Log("MainForm disposed successfully");
