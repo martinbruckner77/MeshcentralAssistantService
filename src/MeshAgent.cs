@@ -48,6 +48,7 @@ namespace MeshAssistant
         private string serviceName = null;
         private string[] nodeids = null;
         public Dictionary<string, Image> userimages = new Dictionary<string, Image>(); // UserID --> Image
+        private const string KILL_PIPE_NAME = "\\\\.\\pipe\\MeshAssistantKillPipe";
         public Dictionary<string, string> userrealname = new Dictionary<string, string>(); // UserID --> User real name
         public Dictionary<string, string> usernames = new Dictionary<string, string>(); // UserID --> User name
 
@@ -89,51 +90,22 @@ namespace MeshAssistant
 
         public void KillAgent()
         {
-            try 
-            {
-                // Get all MeshAgent processes
-                var processes = System.Diagnostics.Process.GetProcessesByName(AGENT_PROCESS_NAME);
-                
-                foreach (var proc in processes)
+            try {
+                // Send kill command through named pipe to service
+                using (var pipeClient = new NamedPipeClientStream(".", KILL_PIPE_NAME, PipeDirection.Out))
                 {
-                    try
-                    {
-                        // Try to kill with elevated privileges
-                        var startInfo = new System.Diagnostics.ProcessStartInfo();
-                        startInfo.UseShellExecute = true;
-                        startInfo.FileName = "taskkill.exe";
-                        startInfo.Arguments = $"/F /PID {proc.Id}";
-                        startInfo.Verb = "runas";
-                        startInfo.CreateNoWindow = true;
-                        
-                        var killProc = System.Diagnostics.Process.Start(startInfo);
-                        killProc.WaitForExit();
-                        
-                        if (killProc.ExitCode == 0)
-                        {
-                            Log($"Successfully terminated MeshAgent process {proc.Id}");
-                        }
-                        else
-                        {
-                            Log($"Failed to terminate MeshAgent process {proc.Id} with exit code {killProc.ExitCode}");
-                        }
-                    }
-                    catch (System.ComponentModel.Win32Exception ex)
-                    {
-                        // Handle UAC cancel or access denied
-                        Log($"Failed to terminate MeshAgent process {proc.Id}: {ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Error terminating MeshAgent process {proc.Id}: {ex.Message}");
-                    }
+                    pipeClient.Connect(1000); // Wait 1 second max
+                    var writer = new StreamWriter(pipeClient);
+                    writer.WriteLine("KILL");
+                    writer.Flush();
                 }
+                Log("Kill command sent to service");
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex) { 
                 Log("Failed to terminate MeshAgent: " + ex.Message);
             }
         }
+
         public void Log(string msg)
         {
             if (debug) { try { File.AppendAllText("debug.log", DateTime.Now.ToString("HH:mm:tt.ffff") + ": Agent: " + msg + "\r\n"); } catch (Exception) { } }
